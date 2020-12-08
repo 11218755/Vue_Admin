@@ -1,0 +1,79 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using Web.Library;
+using Microsoft.Extensions.Hosting;
+using Quartz;
+using Quartz.Spi;
+
+namespace Web.Jobs
+{
+    public class QuartzHostedService : IHostedService
+    {
+        private readonly ISchedulerFactory _schedulerFactory;
+        private readonly IJobFactory _jobFactory;
+        private readonly IEnumerable<JobSchedule> _jobSchedules;
+
+        public QuartzHostedService(ISchedulerFactory schedulerFactory, IJobFactory jobFactory, IEnumerable<JobSchedule> jobSchedules)
+        {
+            _schedulerFactory = schedulerFactory ?? throw new ArgumentNullException(nameof(schedulerFactory));
+            _jobFactory = jobFactory ?? throw new ArgumentNullException(nameof(jobFactory));
+            _jobSchedules = jobSchedules ?? throw new ArgumentNullException(nameof(jobSchedules));
+        }
+        public IScheduler Scheduler { get; set; }
+        //开始任务的配置
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            Scheduler = await _schedulerFactory.GetScheduler(cancellationToken);
+            Scheduler.JobFactory = _jobFactory;
+            foreach (var jobSchedule in _jobSchedules)
+            {
+                var job = CreateJob(jobSchedule);
+                var trigger = CreateTrigger(jobSchedule);
+                await Scheduler.ScheduleJob(job, trigger, cancellationToken);
+                jobSchedule.JobStatu = JobStatus.Scheduling;
+            }
+            await Scheduler.Start(cancellationToken);
+            foreach (var jobSchedule in _jobSchedules)
+            {
+                jobSchedule.JobStatu = JobStatus.Running;
+            }
+            LogHelper.logInfo("已开始Quartz调度...");
+           
+        }
+        
+        //任务停止的配置
+        public async Task StopAsync(CancellationToken cancellationToken)
+        {
+            await Scheduler?.Shutdown(cancellationToken);
+            foreach (var jobSchedule in _jobSchedules)
+            {
+             
+                jobSchedule.JobStatu = JobStatus.Stopped;
+            }
+            LogHelper.logInfo("停止Quartz调度...");
+        }
+        
+        private static IJobDetail CreateJob(JobSchedule schedule)
+        {
+            var jobType = schedule.JobType;
+            return JobBuilder
+                .Create(jobType)
+                .WithIdentity(jobType.FullName)
+                .WithDescription(jobType.Name)
+                .Build();
+        }
+
+        private static ITrigger CreateTrigger(JobSchedule schedule)
+        {
+            return TriggerBuilder
+                .Create()
+                .WithIdentity($"{schedule.JobType.FullName}.trigger")
+                .WithCronSchedule(schedule.CronExpression)
+                .WithDescription(schedule.CronExpression)
+                .Build();
+        }
+    }
+
+}

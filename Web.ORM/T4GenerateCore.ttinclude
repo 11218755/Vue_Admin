@@ -1,0 +1,606 @@
+﻿<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Xml.Linq" #>
+<#@ assembly name="System.Data" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Xml" #>
+<#@ import namespace="System.Xml.Linq" #>
+<#@ import namespace="System.Data.SqlClient" #>
+
+<#+
+/*!
+ * 文件名称：T4模板核心代码生成器
+ */
+#region 数据库字段类型和C#映射关系
+
+public class SqlServerDbTypeMap
+{
+    public static string MapCsharpType(string dbtype)
+    {
+        if (string.IsNullOrEmpty(dbtype)) return dbtype;
+        dbtype = dbtype.ToLower();
+        string csharpType = "object";
+        switch (dbtype)
+        {
+            case "bigint": csharpType = "long"; break;
+            case "binary": csharpType = "byte[]"; break;
+            case "bit": csharpType = "bool"; break;
+            case "char": csharpType = "string"; break;
+            case "date": csharpType = "DateTime"; break;
+            case "datetime": csharpType = "DateTime"; break;
+            case "datetime2": csharpType = "DateTime"; break;
+            case "datetimeoffset": csharpType = "DateTimeOffset"; break;
+            case "decimal": csharpType = "decimal"; break;
+            case "float": csharpType = "double"; break;
+            case "image": csharpType = "byte[]"; break;
+            case "int": csharpType = "int"; break;
+            case "money": csharpType = "decimal"; break;
+            case "nchar": csharpType = "string"; break;
+            case "ntext": csharpType = "string"; break;
+            case "numeric": csharpType = "decimal"; break;
+            case "nvarchar": csharpType = "string"; break;
+            case "real": csharpType = "Single"; break;
+            case "smalldatetime": csharpType = "DateTime"; break;
+            case "smallint": csharpType = "short"; break;
+            case "smallmoney": csharpType = "decimal"; break;
+            case "sql_variant": csharpType = "object"; break;
+            case "sysname": csharpType = "object"; break;
+            case "text": csharpType = "string"; break;
+            case "time": csharpType = "TimeSpan"; break;
+            case "timestamp": csharpType = "byte[]"; break;
+            case "tinyint": csharpType = "byte"; break;
+            case "uniqueidentifier": csharpType = "Guid"; break;
+            case "varbinary": csharpType = "byte[]"; break;
+            case "varchar": csharpType = "string"; break;
+            case "xml": csharpType = "string"; break;
+            default: csharpType = "object"; break;
+        }
+        return csharpType;
+    }
+
+    public static Type MapCommonType(string dbtype)
+    {
+        if (string.IsNullOrEmpty(dbtype)) return Type.Missing.GetType();
+        dbtype = dbtype.ToLower();
+        Type commonType = typeof(object);
+        switch (dbtype)
+        {
+            case "bigint": commonType = typeof(long); break;
+            case "binary": commonType = typeof(byte[]); break;
+            case "bit": commonType = typeof(bool); break;
+            case "char": commonType = typeof(string); break;
+            case "date": commonType = typeof(DateTime); break;
+            case "datetime": commonType = typeof(DateTime); break;
+            case "datetime2": commonType = typeof(DateTime); break;
+            case "datetimeoffset": commonType = typeof(DateTimeOffset); break;
+            case "decimal": commonType = typeof(decimal); break;
+            case "float": commonType = typeof(double); break;
+            case "image": commonType = typeof(byte[]); break;
+            case "int": commonType = typeof(int); break;
+            case "money": commonType = typeof(decimal); break;
+            case "nchar": commonType = typeof(string); break;
+            case "ntext": commonType = typeof(string); break;
+            case "numeric": commonType = typeof(decimal); break;
+            case "nvarchar": commonType = typeof(string); break;
+            case "real": commonType = typeof(Single); break;
+            case "smalldatetime": commonType = typeof(DateTime); break;
+            case "smallint": commonType = typeof(short); break;
+            case "smallmoney": commonType = typeof(decimal); break;
+            case "sql_variant": commonType = typeof(object); break;
+            case "sysname": commonType = typeof(object); break;
+            case "text": commonType = typeof(string); break;
+            case "time": commonType = typeof(TimeSpan); break;
+            case "timestamp": commonType = typeof(byte[]); break;
+            case "tinyint": commonType = typeof(byte); break;
+            case "uniqueidentifier": commonType = typeof(Guid); break;
+            case "varbinary": commonType = typeof(byte[]); break;
+            case "varchar": commonType = typeof(string); break;
+            case "xml": commonType = typeof(string); break;
+            default: commonType = typeof(object); break;
+        }
+        return commonType;
+    }
+}
+#endregion
+
+#region 表字段映射实体
+
+public class DataTableMap
+{
+    public object TABLE_NAME { get; set; }
+
+    public object TABLE_ID { get; set; }
+
+    public object COLUMN_NAME { get; set; }
+
+    public object DATA_TYPE { get; set; }
+
+    public object CHARACTER_MAXIMUM_LENGTH { get; set; }
+
+    public object COLUMN_DESCRIPTION { get; set; }
+
+    public object COLUMN_DEFAULT { get; set; }
+
+    public object IS_NULLABLE { get; set; }
+}
+
+#endregion
+
+// 模板帮助库
+public class MssqlHelper
+{
+	public static string prefix{ get; set;}
+
+    public static string connStr { get; set; }
+
+    // 获取所有的表，包括视图
+    public static List<string> GetTables()
+    {
+		//如果不想获取全部数据库表则可以手动添加表名至list
+		//List<string> list = new List<string>();
+		//list.Add("IR_AdminUsers");
+		//list.Add("IR_Restaurants");
+		//list.Add("IR_Foods");
+		//list.Add("IR_FoodCategory");
+		//list.Add("IR_ApiInfo");
+		//list.Add("IR_FoodsOrder");
+		//list.Add("IR_AdminRoles");
+		//list.Add("IR_AdminAuth");
+		//return list;
+       List<string> list = new List<string>();
+       SqlConnection conn = new SqlConnection();
+       string connectionString = connStr;
+       conn.ConnectionString = connectionString;
+       conn.Open();
+       string sqlStr = "select name from sysobjects where xtype in('U','V')";
+       SqlCommand cmd = new SqlCommand();
+       cmd.Connection = conn;
+       //执行sql语句
+       cmd.CommandText = sqlStr;
+       //获取查询结果
+       SqlDataReader dr = cmd.ExecuteReader();
+       while (dr.Read())
+       {
+           list.Add((string)dr["name"]);
+       }
+       conn.Close();
+       return list;
+    }
+
+    // 获取表结构信息
+    public static List<DataTableMap> GetTableColumns(string tableName)
+    {
+        string sql = @"SELECT  sysobjects.name AS TABLE_NAME ,
+								syscolumns.Id  AS TABLE_ID,
+								syscolumns.name AS COLUMN_NAME ,
+								systypes.name AS DATA_TYPE ,
+								syscolumns.length AS CHARACTER_MAXIMUM_LENGTH ,
+								sys.extended_properties.[value] AS COLUMN_DESCRIPTION ,
+								syscomments.text AS COLUMN_DEFAULT ,
+								syscolumns.isnullable AS IS_NULLABLE
+								FROM    syscolumns
+								INNER JOIN systypes ON syscolumns.xtype = systypes.xtype
+								LEFT JOIN sysobjects ON syscolumns.id = sysobjects.id
+								LEFT OUTER JOIN sys.extended_properties ON ( sys.extended_properties.minor_id = syscolumns.colid
+																			 AND sys.extended_properties.major_id = syscolumns.id
+																		   )
+								LEFT OUTER JOIN syscomments ON syscolumns.cdefault = syscomments.id
+								WHERE   syscolumns.id IN ( SELECT   id
+												   FROM     sysobjects
+												   WHERE    xtype in( 'U','V') )
+								AND ( systypes.name <> 'sysname' ) AND sysobjects.name='" + tableName + "'  ORDER BY syscolumns.colid";
+
+        List<DataTableMap> list = new List<DataTableMap>();
+        SqlConnection conn = new SqlConnection();
+        string connectionString = connStr;
+        conn.ConnectionString = connectionString;
+        conn.Open();
+        SqlCommand cmd = new SqlCommand();
+        cmd.Connection = conn;
+        //执行sql语句
+        cmd.CommandText = sql;
+        //获取查询结果
+        SqlDataReader dr = cmd.ExecuteReader();
+        while (dr.Read())
+        {
+            var table = new DataTableMap();
+            table.TABLE_NAME = dr["TABLE_NAME"];
+            table.TABLE_ID = dr["TABLE_ID"];
+            table.COLUMN_NAME = dr["COLUMN_NAME"];
+            table.DATA_TYPE = dr["DATA_TYPE"];
+            table.CHARACTER_MAXIMUM_LENGTH = dr["CHARACTER_MAXIMUM_LENGTH"];
+            table.COLUMN_DESCRIPTION = dr["COLUMN_DESCRIPTION"];
+            table.COLUMN_DEFAULT = dr["COLUMN_DEFAULT"];
+            table.IS_NULLABLE = dr["IS_NULLABLE"];
+            list.Add(table);
+        }
+        conn.Close();
+        return list;
+    }
+
+    // 判断目录是否存在
+    public static bool IsExistDirectory(string directoryPath)
+    {
+        return Directory.Exists(directoryPath);
+    }
+
+    // 判断文件是否存在
+    public static bool IsExistFile(string filePath)
+    {
+        return File.Exists(filePath);
+    }
+
+    // 将生成的文体包含到项目中
+    public static void ContainFileToCsproj(string fileName, string solutionDir, string csprojName)
+    {
+        string path = solutionDir + csprojName + @"\" + csprojName + ".csproj";
+
+        XDocument doc = XDocument.Load(path);
+        XElement root = doc.Root;
+        string xmlns = "{" + root.Attribute("xmlns").Value + "}";
+        IEnumerable<XElement> compileList = root.Elements(xmlns + "ItemGroup").Elements(xmlns + "Compile");
+        XElement itemGroup = compileList.FirstOrDefault().Parent;
+
+		var _file=compileList.Where(u => u.Attribute("Include").Value == fileName);
+        if (_file.Count() > 0)  _file.Remove();
+
+        XElement compile = new XElement(xmlns + "Compile");
+        compile.SetAttributeValue("Include", fileName);
+        itemGroup.AddFirst(compile);
+        doc.Save(path);
+    }
+
+    // 写入文件
+    public static void CreateFile(string filePath, string text, Encoding encoding)
+    {
+        try
+        {
+            //如果文件不存在则创建该文件
+            if (IsExistFile(filePath))
+            {
+                File.Delete(filePath);
+            }
+            //创建文件
+            FileInfo file = new FileInfo(filePath);
+            using (FileStream stream = file.Create())
+            {
+                using (StreamWriter writer = new StreamWriter(stream, encoding))
+                {
+                    writer.Write(text);
+                    writer.Flush();
+                }
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    // 生成实体文件，会覆盖原文件
+    public static void CreateEntityFile(string tableName, string solutionDir)
+    {
+        if (!string.IsNullOrEmpty(tableName) && !string.IsNullOrWhiteSpace(tableName))
+        {
+			// 生成字段
+            List<DataTableMap> tableColumns = GetTableColumns(tableName);
+
+			// 替换表前缀
+			tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            // 引用
+            string codeStr = "using System;\r\n";
+			codeStr+="using System.Runtime.Serialization;\r\n\r\n";
+
+            // 描述信息
+            codeStr += "/*!\r\n";
+            codeStr += "* 文件名称：" + tableName + "实体类\r\n";
+            //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+            codeStr += "*/\r\n";
+
+            // 命名空间声明
+            codeStr += "namespace Web.Entity\r\n";
+            codeStr += "{\r\n";
+
+            // 序列化
+			codeStr+="\t[Serializable]\r\n";
+            codeStr += "\t[DataContract]\r\n";
+
+            // 生成类声明
+            codeStr += "\tpublic partial class " + tableName + "\r\n";
+            codeStr += "\t{\r\n";
+
+
+            foreach (DataTableMap tableColumn in tableColumns)
+            {
+                // 生成字段描述
+                codeStr += "\t\t/// <summary>\r\n";
+                codeStr += "\t\t/// 描述：" + tableColumn.COLUMN_DESCRIPTION + "\r\n";
+				codeStr += "\t\t/// 可空：" +(Convert.ToInt32(tableColumn.IS_NULLABLE)==0?"不为空":"空") + "\r\n";
+				codeStr += "\t\t/// 默认值：" + tableColumn.COLUMN_DEFAULT + "\r\n";
+                codeStr += "\t\t/// </summary>\r\n";
+
+				// 序列化
+				codeStr += "\t\t[DataMember]\r\n";
+                // 生成属性
+                codeStr += "\t\tpublic " + (((Convert.ToInt32(tableColumn.IS_NULLABLE)==1)&&(SqlServerDbTypeMap.MapCsharpType(tableColumn.DATA_TYPE.ToString())!="string"))?"Nullable<":"")+SqlServerDbTypeMap.MapCsharpType(tableColumn.DATA_TYPE.ToString())+(((Convert.ToInt32(tableColumn.IS_NULLABLE)==1)&&(SqlServerDbTypeMap.MapCsharpType(tableColumn.DATA_TYPE.ToString())!="string"))?">":"") +" "+ tableColumn.COLUMN_NAME.ToString() + " { get; set; }\r\n\r\n";
+            }
+
+            // 生成类声明结束符
+            codeStr += "\t}\r\n";
+            codeStr += "}";
+
+            // 保存文件
+            CreateFile(solutionDir + @"Web.Entity\" + tableName + ".cs", codeStr, Encoding.UTF8);
+
+            // 包含项目
+            //ContainFileToCsproj(tableName + ".cs", solutionDir, "Web.Entity");
+        }
+    }
+
+    // 生成仓储接口文件，会覆盖原文件
+    public static void CreateIRepositoryFile(string tableName, string solutionDir)
+    {
+        if (!string.IsNullOrEmpty(tableName) && !string.IsNullOrWhiteSpace(tableName))
+        {
+			// 替换表前缀
+			tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            // 仓储名称
+            string repositoryName = "I" + tableName.Replace("Entity", "") + "Repository";
+
+            // 引用
+            string codeStr = "using System;\r\n";
+            codeStr += "using Web.Entity;\r\n\r\n";
+
+            // 描述信息
+            codeStr += "/*!\r\n";
+            codeStr += "* 文件名称：" + repositoryName + "仓储接口类\r\n";
+            //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+            codeStr += "*/\r\n";
+
+            // 命名空间声明
+            codeStr += "namespace Web.IRepository\r\n";
+            codeStr += "{\r\n";
+
+            // 生成接口声明
+            codeStr += "\tpublic partial interface " + repositoryName + " : IBaseRepository<" + tableName + ">\r\n";
+            codeStr += "\t{\r\n";
+
+            // 生成类声明结束符
+            codeStr += "\t}\r\n";
+            codeStr += "}";
+
+            // 保存文件
+            CreateFile(solutionDir + @"Web.IRepository\" + repositoryName + ".cs", codeStr, Encoding.UTF8);
+
+            // 包含项目
+            //ContainFileToCsproj(repositoryName + ".cs", solutionDir, "Web.IRepository");
+        }
+    }
+
+    // 生成仓储文件，会覆盖原文件
+    public static void CreateRepositoryFile(string tableName, string solutionDir)
+    {
+        if (!string.IsNullOrEmpty(tableName) && !string.IsNullOrWhiteSpace(tableName))
+        {
+			// 替换表前缀
+			tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            // 仓储名称
+            string repositoryName = tableName.Replace("Entity", "") + "Repository";
+
+            // 引用
+            string codeStr = "using System;\r\n";
+            codeStr += "using Web.Entity;\r\n";
+            codeStr += "using Web.IRepository;\r\n\r\n";
+
+            // 描述信息
+            codeStr += "/*!\r\n";
+            codeStr += "* 文件名称：" + repositoryName + "仓储类\r\n";
+            //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+            codeStr += "*/\r\n";
+
+            // 命名空间声明
+            codeStr += "namespace Web.Repository\r\n";
+            codeStr += "{\r\n";
+
+            // 生成接口声明
+            codeStr += "\tpublic partial class " + repositoryName + " : BaseRepository<" + tableName + "> , I" + repositoryName + "\r\n";
+            codeStr += "\t{\r\n";
+
+            // 生成类声明结束符
+            codeStr += "\t}\r\n";
+            codeStr += "}";
+
+            // 保存文件
+            CreateFile(solutionDir + @"Web.Repository\" + repositoryName + ".cs", codeStr, Encoding.UTF8);
+
+            // 包含项目
+            //ContainFileToCsproj(repositoryName + ".cs", solutionDir, "Web.Repository");
+        }
+    }
+
+    // 生成服务接口文件，会覆盖原文件
+    public static void CreateIServicesFile(string tableName, string solutionDir)
+    {
+        if (!string.IsNullOrEmpty(tableName) && !string.IsNullOrWhiteSpace(tableName))
+        {
+			// 替换表前缀
+			tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            // 服务名称
+            string servicesName = "I" + tableName.Replace("Entity", "") + "Services";
+
+            // 引用
+            string codeStr = "using System;\r\n";
+            codeStr += "using Web.Entity;\r\n\r\n";
+
+            // 描述信息
+            codeStr += "/*!\r\n";
+            codeStr += "* 文件名称：" + servicesName + "服务接口类\r\n";
+            //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+            codeStr += "*/\r\n";
+
+            // 命名空间声明
+            codeStr += "namespace Web.IServices\r\n";
+            codeStr += "{\r\n";
+
+            // 生成接口声明
+            codeStr += "\tpublic partial interface " + servicesName + " : IBaseServices<" + tableName + ">\r\n";
+            codeStr += "\t{\r\n";
+
+            // 生成类声明结束符
+            codeStr += "\t}\r\n";
+            codeStr += "}";
+
+            // 保存文件
+            CreateFile(solutionDir + @"Web.IServices\" + servicesName + ".cs", codeStr, Encoding.UTF8);
+
+            // 包含项目
+            //ContainFileToCsproj(servicesName + ".cs", solutionDir, "Web.IServices");
+        }
+    }
+
+    // 生成服务文件，会覆盖原文件
+    public static void CreateServicesFile(string tableName, string solutionDir)
+    {
+        if (!string.IsNullOrEmpty(tableName) && !string.IsNullOrWhiteSpace(tableName))
+        {
+			// 替换表前缀
+			tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            // 仓储名称
+            string servicesName = tableName.Replace("Entity", "") + "Services";
+
+            // 引用
+            string codeStr = "using System;\r\n";
+            codeStr += "using Web.Entity;\r\n";
+            codeStr += "using Web.IServices;\r\n";
+            codeStr += "using Web.IRepository;\r\n\r\n";
+
+            // 描述信息
+            codeStr += "/*!\r\n";
+            codeStr += "* 文件名称：" + servicesName + "服务类\r\n";
+            //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+            codeStr += "*/\r\n";
+
+            // 命名空间声明
+            codeStr += "namespace Web.Services\r\n";
+            codeStr += "{\r\n";
+
+            // 生成接口声明
+            codeStr += "\tpublic partial class " + servicesName + " : BaseServices<" + tableName + "> , I" + servicesName + "\r\n";
+
+            codeStr += "\t{\r\n";
+
+            // 声明接口仓储
+            codeStr += "\t\tI" + tableName.Replace("Entity", "") + "Repository _I" + tableName.Replace("Entity", "") + "Repository;\r\n";
+
+            // 构造函数注入
+            codeStr += "\t\tpublic " + servicesName + "(I" + tableName.Replace("Entity", "") + "Repository __I" + tableName.Replace("Entity", "") + "Repository)\r\n";
+            codeStr += "\t\t{\r\n";
+
+            codeStr += "\t\t\tthis._I" + tableName.Replace("Entity", "") + "Repository = __I" + tableName.Replace("Entity", "") + "Repository;\r\n";
+            codeStr += "\t\t\tbase._IBaseRepository = __I" + tableName.Replace("Entity", "") + "Repository;\r\n";
+
+            codeStr += "\t\t}\r\n";
+
+            // 生成类声明结束符
+            codeStr += "\t}\r\n";
+            codeStr += "}";
+
+            // 保存文件
+            CreateFile(solutionDir + @"Web.Services\" + servicesName + ".cs", codeStr, Encoding.UTF8);
+
+            // 包含项目
+            //ContainFileToCsproj(servicesName + ".cs", solutionDir, "Web.Services");
+        }
+    }
+
+    // 生成父控制器类
+    public static void CreateBaseController(List<string> tableNames, string solutionDir)
+    {
+        // 引用
+        string codeStr = "using Microsoft.AspNetCore.Mvc;\r\n";
+        codeStr += "using Web.IServices;\r\n\r\n";
+
+        // 描述信息
+        codeStr += "/*!\r\n";
+        codeStr += "* 文件名称：BaseController父控制器类\r\n";
+        //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+        codeStr += "*/\r\n";
+
+        // 命名空间声明
+        codeStr += "namespace Web\r\n";
+        codeStr += "{\r\n";
+
+        // 生成接口声明
+        codeStr += "\tpublic partial class BaseController : Controller\r\n";
+
+        codeStr += "\t{\r\n";
+
+		string _tableName=string.Empty;
+        foreach (string tableName in tableNames)
+        {
+			// 替换表前缀
+			_tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            codeStr += "\t\tprotected I" + _tableName.Replace("Entity", "") + "Services _I" + _tableName.Replace("Entity", "") + "Services;\r\n";
+        }
+
+        // 生成类声明结束符
+        codeStr += "\t}\r\n";
+        codeStr += "}";
+
+        // 保存文件
+        CreateFile(solutionDir + @"Web\Controllers\BaseController.cs", codeStr, Encoding.UTF8);
+
+    }
+
+    // 生成父API控制器类
+    public static void CreateBaseApiController(List<string> tableNames, string solutionDir)
+    {
+        // 引用
+        string codeStr = "using System.Web.Http;\r\n";
+        codeStr += "using Web.IServices;\r\n\r\n";
+
+        // 描述信息
+        codeStr += "/*!\r\n";
+        codeStr += "* 文件名称：BaseApiController父API控制器类\r\n";
+        //codeStr += "* 编写日期：" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\r\n";
+        codeStr += "*/\r\n";
+
+        // 命名空间声明
+        codeStr += "namespace Web.RESTful_API\r\n";
+        codeStr += "{\r\n";
+
+        // 生成接口声明
+        codeStr += "\tpublic partial class BaseApiController : ApiController\r\n";
+
+        codeStr += "\t{\r\n";
+
+		string _tableName=string.Empty;
+        foreach (string tableName in tableNames)
+        {
+			// 替换表前缀
+			_tableName=string.IsNullOrEmpty(MssqlHelper.prefix)?tableName: tableName.Replace(MssqlHelper.prefix,"");
+
+            codeStr += "\t\tprotected I" + _tableName.Replace("Entity", "") + "Services _I" + _tableName.Replace("Entity", "") + "Services;\r\n";
+        }
+
+        // 生成类声明结束符
+        codeStr += "\t}\r\n";
+        codeStr += "}";
+
+        // 保存文件
+        CreateFile(solutionDir + @"Web.RESTful API\Controllers\BaseApiController.cs", codeStr, Encoding.UTF8);
+
+        // 包含项目
+        //ContainFileToCsproj(@"Controllers\BaseApiController" + ".cs", solutionDir, "Web.RESTful API");
+    }
+}
+
+#>

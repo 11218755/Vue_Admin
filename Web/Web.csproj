@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetCore.NPOI" Version="1.2.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="3.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.0.0" />
+    <PackageReference Include="Quartz" Version="3.2.3" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
+    <PackageReference Include="System.DirectoryServices" Version="4.7.0" />
+    <PackageReference Include="TimedJob" Version="2.0.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\Web.Entity\Web.Entity.csproj" />
+    <ProjectReference Include="..\Web.IRepository\Web.IRepository.csproj" />
+    <ProjectReference Include="..\Web.IServices\Web.IServices.csproj" />
+    <ProjectReference Include="..\Web.Library\Web.Library.csproj" />
+    <ProjectReference Include="..\Web.ORM\Web.ORM.csproj" />
+    <ProjectReference Include="..\Web.Repository\Web.Repository.csproj" />
+    <ProjectReference Include="..\Web.Services\Web.Services.csproj" />
+    <ProjectReference Include="..\Web.WeChatAPI\Web.WeChatAPI.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Areas\Backend\Data\" />
+    <Folder Include="Areas\Backend\Models\" />
+    <Folder Include="Areas\Frontend\Controllers\" />
+    <Folder Include="Areas\Frontend\Data\" />
+    <Folder Include="Areas\Frontend\Models\" />
+    <Folder Include="Areas\Frontend\Views\" />
+  </ItemGroup>
+
+</Project>

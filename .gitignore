@@ -1,0 +1,24 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/.vs/Web
+/Web/.vs/Web
+/Web/bin/Debug/netcoreapp3.0
+/Web/obj
+/Web.Entity/bin/Debug/netcoreapp3.0
+/Web.Entity/obj
+/Web.IRepository/bin/Debug/netcoreapp3.0
+/Web.IRepository/obj
+/Web.IServices/bin/Debug/netcoreapp3.0
+/Web.IServices/obj
+/Web.Library/bin/Debug/netcoreapp3.0
+/Web.Library/obj
+/Web.ORM/bin/Debug/netcoreapp3.0
+/Web.ORM/obj
+/Web.Repository/bin/Debug/netcoreapp3.0
+/Web.Repository/obj
+/Web.Services/bin/Debug/netcoreapp3.0
+/Web.Services/obj
+/Web.WeChatAPI/bin/Debug/netcoreapp3.0
+/Web.WeChatAPI/obj
