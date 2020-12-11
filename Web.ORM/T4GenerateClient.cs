@@ -13,7 +13,7 @@
 //------------------------------------------------------------------------------
 
 
-// 设置数据库连接字符串：MssqlHelper.connStr="Server=47.103.60.44;Database=GSKEMP_DEV;Uid=sa;Password=Imtpath@123;";
+// 设置数据库连接字符串：MssqlHelper.connStr="Server=47.114.34.148;Database=Vue_Admin;Uid=sa;Password=1qaz2wsx3edc///;";
 
 
 // 设置表前缀：MssqlHelper.prefix=""; 可为空。
@@ -24,3 +24,30 @@
 
 // 获取数据库所有的表和视图：List<string> tableNames=MssqlHelper.GetTables();
 
+
+// 获取解决方案目录：string solutionDir=Host.ResolveAssemblyReference("$(SolutionDir)");
+
+
+
+	// 生成所有实体层实体类文件：MssqlHelper.CreateEntityFile(tableName,solutionDir);
+
+	
+	// 生成所有仓储接口层仓储接口类文件：MssqlHelper.CreateIRepositoryFile(tableName,solutionDir);
+
+	
+	// 生成所有仓储层仓储类文件：MssqlHelper.CreateRepositoryFile(tableName,solutionDir);
+
+	
+	// 生成所有服务接口层服务接口类文件：MssqlHelper.CreateIServicesFile(tableName,solutionDir);
+
+		
+	// 生成所有服务层服务类文件：MssqlHelper.CreateServicesFile(tableName,solutionDir);
+
+	
+
+// 生成Web项目文件夹App_Code的父控制器类：MssqlHelper.CreateBaseController(tableNames,solutionDir);
+
+
+// 生成Web API项目文件夹App_Code的父Api控制器类：MssqlHelper.CreateBaseApiController(tableNames,solutionDir);
+
+//

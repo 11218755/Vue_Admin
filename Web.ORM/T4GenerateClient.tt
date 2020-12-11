@@ -18,9 +18,9 @@
 //------------------------------------------------------------------------------
 
 
-// 设置数据库连接字符串：MssqlHelper.connStr="Server=47.103.60.44;Database=GSKEMP_DEV;Uid=sa;Password=Imtpath@123;";
+// 设置数据库连接字符串：MssqlHelper.connStr="Server=47.114.34.148;Database=Vue_Admin;Uid=sa;Password=1qaz2wsx3edc///;";
 
-<# MssqlHelper.connStr="Server=192.168.13.29;Database=WXAPPCENTER;Uid=sa;Password=Imtpath@123;"; #>
+<# MssqlHelper.connStr="Server=47.114.34.148;Database=Vue_Admin;Uid=sa;Password=1qaz2wsx3edc///;"; #>
 
 // 设置表前缀：MssqlHelper.prefix=""; 可为空。
 
